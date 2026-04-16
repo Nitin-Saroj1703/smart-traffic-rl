@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional>
+    <!-- Traffic light programs for all 9 intersections -->
+    <tlLogic id="n00" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n01" type="static" programID="0" offset="15">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n02" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n10" type="static" programID="0" offset="15">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n11" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n12" type="static" programID="0" offset="15">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n20" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n21" type="static" programID="0" offset="15">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+    
+    <tlLogic id="n22" type="static" programID="0" offset="0">
+        <phase duration="30" state="GGggrrrrGGggrrrr"/>
+        <phase duration="3"  state="yyggrrrryyggrrrr"/>
+        <phase duration="30" state="rrrrGGggrrrrGGgg"/>
+        <phase duration="3"  state="rrrryyggrrrryygg"/>
+    </tlLogic>
+</additional>

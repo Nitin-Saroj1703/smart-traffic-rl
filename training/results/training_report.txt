@@ -1,0 +1,47 @@
+================================================================================
+SMART TRAFFIC RL - TRAINING REPORT
+================================================================================
+
+Training Date: 2026-04-16T15:43:00.404633
+
+----------------------------------------
+CURRICULUM STAGES
+----------------------------------------
+
+Stage 1:
+  Final Reward: 0.00
+  Final Wait Time: 0.07
+  Final CO2: 7807.51
+
+Stage 2:
+  Final Reward: 0.00
+  Final Wait Time: 0.08
+  Final CO2: 7954.61
+
+Stage 3:
+  Final Reward: 0.00
+  Final Wait Time: 0.11
+  Final CO2: 7959.06
+
+----------------------------------------
+FINAL EVALUATION (PPO Agent)
+----------------------------------------
+  Mean Reward: -13043.70 ± 0.00
+  Mean Wait Time: 0.04 ± 0.00
+  Mean CO2: 7845.27 ± 0.00
+  Emergency Clearance Rate: 100.0%
+  Mean Clearance Time: 17.0 steps
+
+----------------------------------------
+BASELINE (Random Agent)
+----------------------------------------
+  Mean Reward: -19186.55
+  Mean Wait Time: 1.48
+  Mean CO2: 10444.29
+
+----------------------------------------
+IMPROVEMENTS OVER BASELINE
+----------------------------------------
+  Reward: 32.0%
+  Wait Time: 97.0%
+  CO2 Emissions: 24.9%

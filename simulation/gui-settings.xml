@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<viewsettings>
+    <scheme name="real world"/>
+    <delay value="100"/>
+    
+    <viewport zoom="500" x="200" y="200"/>
+    
+    <viewsettings>
+        <vehicle value="true"/>
+        <vehicleName value="false"/>
+        <vehicleValue value="CO2"/>
+    </viewsettings>
+</viewsettings>

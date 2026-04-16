@@ -1,0 +1,46 @@
+{
+  "training_date": "2026-04-16T15:43:00.404633",
+  "curriculum_stages": [
+    {
+      "stage": 1,
+      "timesteps": 25,
+      "final_reward": 0.0,
+      "final_wait_time": 0.0703125,
+      "final_co2": 7807.5146484375
+    },
+    {
+      "stage": 2,
+      "timesteps": 49,
+      "final_reward": 0.0,
+      "final_wait_time": 0.0849609375,
+      "final_co2": 7954.609375
+    },
+    {
+      "stage": 3,
+      "timesteps": 74,
+      "final_reward": 0.0,
+      "final_wait_time": 0.11328125,
+      "final_co2": 7959.0576171875
+    }
+  ],
+  "final_evaluation": {
+    "mean_reward": -13043.697771061228,
+    "std_reward": 0.0,
+    "mean_wait_time": 0.043611109256744385,
+    "std_wait_time": 0.0,
+    "mean_co2": 7845.27490234375,
+    "std_co2": 0.00048828125,
+    "emergency_clearance_rate": 100.0,
+    "mean_emergency_clearance_time": 17.0
+  },
+  "baseline": {
+    "mean_reward": -19186.554448210238,
+    "mean_wait_time": 1.478222131729126,
+    "mean_co2": 10444.2900390625
+  },
+  "improvements": {
+    "reward": 32.016465977412786,
+    "wait_time": 97.04975891113281,
+    "co2": 24.884553909301758
+  }
+}

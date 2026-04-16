@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <!-- Grid intersections (3x3 = 9 intersections) -->
+    <!-- Row 0 -->
+    <node id="n00" x="0.0" y="0.0" type="traffic_light"/>
+    <node id="n01" x="200.0" y="0.0" type="traffic_light"/>
+    <node id="n02" x="400.0" y="0.0" type="traffic_light"/>
+    
+    <!-- Row 1 -->
+    <node id="n10" x="0.0" y="200.0" type="traffic_light"/>
+    <node id="n11" x="200.0" y="200.0" type="traffic_light"/>
+    <node id="n12" x="400.0" y="200.0" type="traffic_light"/>
+    
+    <!-- Row 2 -->
+    <node id="n20" x="0.0" y="400.0" type="traffic_light"/>
+    <node id="n21" x="200.0" y="400.0" type="traffic_light"/>
+    <node id="n22" x="400.0" y="400.0" type="traffic_light"/>
+    
+    <!-- Boundary nodes for connections outside grid -->
+    <!-- North entrances -->
+    <node id="north0" x="0.0" y="-100.0" type="priority"/>
+    <node id="north1" x="200.0" y="-100.0" type="priority"/>
+    <node id="north2" x="400.0" y="-100.0" type="priority"/>
+    
+    <!-- South exits -->
+    <node id="south0" x="0.0" y="500.0" type="priority"/>
+    <node id="south1" x="200.0" y="500.0" type="priority"/>
+    <node id="south2" x="400.0" y="500.0" type="priority"/>
+    
+    <!-- West entrances -->
+    <node id="west0" x="-100.0" y="0.0" type="priority"/>
+    <node id="west1" x="-100.0" y="200.0" type="priority"/>
+    <node id="west2" x="-100.0" y="400.0" type="priority"/>
+    
+    <!-- East exits -->
+    <node id="east0" x="500.0" y="0.0" type="priority"/>
+    <node id="east1" x="500.0" y="200.0" type="priority"/>
+    <node id="east2" x="500.0" y="400.0" type="priority"/>
+</nodes>

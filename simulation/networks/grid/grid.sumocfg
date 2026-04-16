@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+    <input>
+        <net-file value="grid_network.net.xml"/>
+        <route-files value="routes.rou.xml"/>
+    </input>
+    
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+    </time>
+    
+    <processing>
+        <time-to-teleport value="-1"/>
+        <time-to-teleport.highways value="0"/>
+        <max-num-vehicles value="1000"/>
+        <scale value="1"/>
+    </processing>
+    
+    <report>
+        <verbose value="true"/>
+        <no-step-log value="false"/>
+        <no-warnings value="false"/>
+    </report>
+    
+    <traci_server>
+        <remote-port value="8813"/>
+        <num-clients value="1"/>
+    </traci_server>
+    
+    <output>
+        <tripinfo-output value="tripinfo.xml"/>
+        <emission-output value="emissions.xml"/>
+        <queue-output value="queue.xml"/>
+        <statistic-output value="statistics.xml"/>
+    </output>
+</configuration>

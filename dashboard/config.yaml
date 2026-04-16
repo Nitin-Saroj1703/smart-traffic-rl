@@ -1,0 +1,27 @@
+# Dashboard Configuration
+dashboard:
+  title: "Smart Traffic RL Dashboard"
+  refresh_rate: 1  # seconds
+  max_history_points: 1000
+
+simulation:
+  model_path: "agents/mappo_final.zip"
+  sumo_config: "simulation/networks/grid/grid.sumocfg"
+  max_steps: 1000
+  headless: true
+
+visualization:
+  color_scheme:
+    green: "#00ff00"
+    yellow: "#ffff00"
+    red: "#ff0000"
+  intersection_grid:
+    rows: 3
+    cols: 3
+
+metrics:
+  default_weights:
+    throughput: 0.4
+    wait_time: -0.4
+    emissions: -0.2
+    emergency: 1.0

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <!-- Define vTypes -->
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="13.89" guiShape="passenger"/>
+    <vType id="emergency" accel="3.5" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="20.0" guiShape="emergency" color="red"/>
+
+    <!-- Horizontal Flows -->
+    <flow id="flow_ew_0" type="car" begin="0" end="3600" period="10" from="w0_n00" to="n02_e0"/>
+    <flow id="flow_we_0" type="car" begin="0" end="3600" period="10" from="e0_n02" to="n00_w0"/>
+    <flow id="flow_ew_1" type="car" begin="0" end="3600" period="12" from="w1_n10" to="n12_e1"/>
+    <flow id="flow_we_1" type="car" begin="0" end="3600" period="12" from="e1_n12" to="n10_w1"/>
+    <flow id="flow_ew_2" type="car" begin="0" end="3600" period="10" from="w2_n20" to="n22_e2"/>
+    <flow id="flow_we_2" type="car" begin="0" end="3600" period="10" from="e2_n22" to="n20_w2"/>
+
+    <!-- Vertical Flows -->
+    <flow id="flow_ns_0" type="car" begin="0" end="3600" period="15" from="n0_n00" to="n20_s0"/>
+    <flow id="flow_sn_0" type="car" begin="0" end="3600" period="15" from="s0_n20" to="n10_n00"/>
+    <flow id="flow_ns_1" type="car" begin="0" end="3600" period="15" from="n1_n01" to="n21_s1"/>
+    <flow id="flow_sn_1" type="car" begin="0" end="3600" period="15" from="s1_n21" to="n11_n01"/>
+    <flow id="flow_ns_2" type="car" begin="0" end="3600" period="15" from="n2_n02" to="n22_s2"/>
+    <flow id="flow_sn_2" type="car" begin="0" end="3600" period="15" from="s2_n22" to="n12_n02"/>
+
+    <!-- Occasional emergency vehicle on the center lane (West to East) -->
+    <flow id="emergency_we" type="emergency" begin="100" end="3600" period="300" from="w1_n10" to="n12_e1"/>
+</routes>
