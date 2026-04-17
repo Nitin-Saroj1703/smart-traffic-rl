@@ -74,25 +74,19 @@ smart-traffic-rl/
 
 ### Step-by-Step Setup
 
-1. **Clone the repository:**
-```bash
-git clone https://github.com/yourusername/smart-traffic-rl.git
-cd smart-traffic-rl
-```
-
-2. **Create and activate virtual environment:**
+1. **Create and activate virtual environment:**
 ```bash
 python -m venv venv
 .\venv\Scripts\activate  # Windows
 source venv/bin/activate # Unix/Linux
 ```
 
-3. **Install dependencies:**
+2. **Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Install SUMO:**
+3. **Install SUMO:**
    - **Windows**: Download from [sumo.dlr.de](https://sumo.dlr.de/docs/Downloads.php) and set `SUMO_HOME`:
      ```powershell
      [System.Environment]::SetEnvironmentVariable("SUMO_HOME","C:\Program Files (x86)\Eclipse\Sumo","User")
@@ -107,7 +101,7 @@ pip install -r requirements.txt
      brew install sumo
      ```
 
-5. **Generate the SUMO network:**
+4. **Generate the SUMO network:**
 ```bash
 python main.py --mode train  # Auto-generates if not found
 # Or manually: select option 6 from the menu
