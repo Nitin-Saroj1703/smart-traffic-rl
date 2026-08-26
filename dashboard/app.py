@@ -35,11 +35,21 @@ try:
 except Exception:
     CONFIG = {}
 
-# Ensure we can find the SUMO binary
-sumo_bin = r"C:\Program Files (x86)\Eclipse\Sumo\bin"
-if sumo_bin not in os.environ.get("PATH", ""):
+# Ensure we can find the SUMO binary (cross-platform)
+sumo_home = os.environ.get("SUMO_HOME", "")
+if not sumo_home:
+    # Auto-detect SUMO_HOME for different platforms
+    if sys.platform == "win32":
+        sumo_home = r"C:\Program Files (x86)\Eclipse\Sumo"
+    elif os.path.isdir("/usr/share/sumo"):
+        sumo_home = "/usr/share/sumo"
+    elif os.path.isdir("/usr/local/share/sumo"):
+        sumo_home = "/usr/local/share/sumo"
+    os.environ["SUMO_HOME"] = sumo_home
+
+sumo_bin = os.path.join(sumo_home, "bin") if sumo_home else ""
+if sumo_bin and sumo_bin not in os.environ.get("PATH", ""):
     os.environ["PATH"] = sumo_bin + os.pathsep + os.environ.get("PATH", "")
-os.environ["SUMO_HOME"] = r"C:\Program Files (x86)\Eclipse\Sumo"
 
 from env.multi_traffic_env import MultiTrafficEnv
 from stable_baselines3 import PPO
