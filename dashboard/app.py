@@ -38,7 +38,6 @@ except Exception:
 # Ensure we can find the SUMO binary (cross-platform)
 sumo_home = os.environ.get("SUMO_HOME", "")
 if not sumo_home:
-    # Auto-detect SUMO_HOME for different platforms
     if sys.platform == "win32":
         sumo_home = r"C:\Program Files (x86)\Eclipse\Sumo"
     elif os.path.isdir("/usr/share/sumo"):
@@ -58,267 +57,157 @@ import traci
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Smart Traffic RL Dashboard",
+    page_title="Smart Traffic RL",
     page_icon="🚦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ── Premium CSS ──────────────────────────────────────────────────────────────
+# ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* ── Google Font ── */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* Root variables */
     :root {
-        --bg-primary: #0e1117;
-        --bg-card: #1a1d23;
-        --bg-card-hover: #22272e;
-        --accent: #4fc3f7;
-        --accent-glow: rgba(79, 195, 247, 0.15);
-        --text-primary: #e0e0e0;
-        --text-muted: #9e9e9e;
-        --green: #66bb6a;
-        --red: #ef5350;
-        --yellow: #fdd835;
-        --orange: #ffa726;
+        --surface: #161b22;
+        --surface-2: #1c2129;
+        --border: #30363d;
+        --accent: #58a6ff;
+        --green: #3fb950;
+        --red: #f85149;
+        --orange: #d29922;
+        --muted: #8b949e;
     }
 
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Inter', sans-serif;
     }
 
-    /* Smooth transitions everywhere */
-    * { transition: all 0.2s ease; }
-
-    /* Main container breathing room */
     .main .block-container {
-        padding: 1.5rem 2rem;
-        max-width: 1200px;
+        padding: 1.2rem 2rem;
+        max-width: 1180px;
     }
 
-    /* Sidebar styling */
+    /* Sidebar */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
-    }
-    [data-testid="stSidebar"] .stRadio label {
-        font-size: 0.95rem;
-        padding: 0.35rem 0;
+        background: #0d1117;
+        border-right: 1px solid var(--border);
     }
 
-    /* Metric cards */
+    /* Metric cards - subtle, not flashy */
     [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #1a1d23 0%, #22272e 100%);
-        border: 1px solid rgba(79,195,247,0.15);
-        border-radius: 12px;
-        padding: 1rem 1.2rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.8rem 1rem;
     }
     [data-testid="stMetric"] label {
-        color: #9e9e9e !important;
-        font-size: 0.8rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        color: var(--muted) !important;
+        font-size: 0.78rem !important;
+        letter-spacing: 0.3px;
     }
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #4fc3f7 !important;
-        font-size: 1.6rem !important;
-        font-weight: 700 !important;
+        font-size: 1.45rem !important;
+        font-weight: 600 !important;
     }
 
     /* Buttons */
     .stButton > button {
-        border-radius: 8px;
-        font-weight: 600;
-        letter-spacing: 0.3px;
-        border: 1px solid rgba(79,195,247,0.3);
-        transition: all 0.25s ease;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.85rem;
+        border: 1px solid var(--border);
     }
     .stButton > button:hover {
-        border-color: #4fc3f7;
-        box-shadow: 0 0 15px rgba(79,195,247,0.25);
-        transform: translateY(-1px);
+        border-color: var(--accent);
     }
 
-    /* Section dividers */
-    hr { border-color: rgba(79,195,247,0.1) !important; }
+    hr { border-color: var(--border) !important; opacity: 0.5; }
 
-    /* Status badge */
-    .status-badge {
+    /* Status pill */
+    .status-pill {
         display: inline-block;
-        padding: 4px 14px;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-    .status-running {
-        background: rgba(102,187,106,0.15);
-        color: #66bb6a;
-        border: 1px solid rgba(102,187,106,0.3);
-    }
-    .status-stopped {
-        background: rgba(158,158,158,0.15);
-        color: #9e9e9e;
-        border: 1px solid rgba(158,158,158,0.3);
-    }
-    .status-paused {
-        background: rgba(255,167,38,0.15);
-        color: #ffa726;
-        border: 1px solid rgba(255,167,38,0.3);
-    }
-
-    /* Intersection grid cell */
-    .grid-cell {
-        border-radius: 10px;
-        padding: 12px 8px;
-        text-align: center;
-        font-weight: 700;
-        font-size: 0.85rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .grid-cell:hover {
-        transform: scale(1.04);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-    }
-    .phase-ns-green  { background: linear-gradient(135deg, #1b5e20, #2e7d32); color: #c8e6c9; }
-    .phase-ns-yellow { background: linear-gradient(135deg, #f57f17, #f9a825); color: #fff8e1; }
-    .phase-ew-green  { background: linear-gradient(135deg, #0d47a1, #1565c0); color: #bbdefb; }
-    .phase-ew-yellow { background: linear-gradient(135deg, #e65100, #ef6c00); color: #ffe0b2; }
-
-    /* Hide Streamlit branding for cleaner look */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-
-    /* Smooth chart container */
-    .chart-container {
-        background: #1a1d23;
+        padding: 3px 12px;
         border-radius: 12px;
-        padding: 0.5rem;
-        border: 1px solid rgba(79,195,247,0.08);
-    }
-
-    /* ── Hero section ── */
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #4fc3f7 0%, #66bb6a 50%, #ffa726 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.3rem;
-        line-height: 1.2;
-    }
-    .hero-subtitle {
-        font-size: 1.05rem;
-        color: #9e9e9e;
-        font-weight: 400;
-        margin-bottom: 1.5rem;
-    }
-
-    /* ── Impact cards ── */
-    .impact-card {
-        background: linear-gradient(135deg, #1a1d23 0%, #22272e 100%);
-        border: 1px solid rgba(79,195,247,0.12);
-        border-radius: 14px;
-        padding: 1.3rem 1.2rem;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    .impact-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 30px rgba(79,195,247,0.1);
-    }
-    .impact-number {
-        font-size: 2rem;
-        font-weight: 800;
-        margin-bottom: 0.2rem;
-    }
-    .impact-label {
-        font-size: 0.82rem;
-        color: #9e9e9e;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 500;
     }
-    .impact-desc {
-        font-size: 0.78rem;
-        color: #6b7280;
-        margin-top: 0.4rem;
-        line-height: 1.4;
+    .pill-live {
+        background: rgba(63, 185, 80, 0.12);
+        color: var(--green);
+        border: 1px solid rgba(63, 185, 80, 0.25);
     }
-
-    /* ── Info boxes ── */
-    .page-info {
-        background: linear-gradient(135deg, rgba(79,195,247,0.06) 0%, rgba(79,195,247,0.02) 100%);
-        border-left: 3px solid #4fc3f7;
-        border-radius: 0 10px 10px 0;
-        padding: 0.9rem 1.2rem;
-        margin-bottom: 1.2rem;
-        font-size: 0.88rem;
-        color: #b0bec5;
-        line-height: 1.55;
+    .pill-idle {
+        background: rgba(139, 148, 158, 0.1);
+        color: var(--muted);
+        border: 1px solid rgba(139, 148, 158, 0.2);
+    }
+    .pill-paused {
+        background: rgba(210, 153, 34, 0.1);
+        color: var(--orange);
+        border: 1px solid rgba(210, 153, 34, 0.2);
     }
 
-    /* ── Grid legend ── */
-    .grid-legend {
+    /* Grid cells */
+    .grid-cell {
+        border-radius: 8px;
+        padding: 10px 6px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+    .phase-ns-green  { background: #1a3a1a; color: #6ee77a; border: 1px solid #2d5a2d; }
+    .phase-ns-yellow { background: #3a3010; color: #f0d060; border: 1px solid #5a4a20; }
+    .phase-ew-green  { background: #102a4a; color: #6ab8f7; border: 1px solid #1a3a5a; }
+    .phase-ew-yellow { background: #3a2510; color: #f0a050; border: 1px solid #5a3a20; }
+
+    /* Legend */
+    .legend {
         display: flex;
-        gap: 14px;
+        gap: 16px;
+        margin: 8px 0 12px;
         flex-wrap: wrap;
-        margin-top: 10px;
-        margin-bottom: 6px;
     }
-    .legend-item {
+    .legend span {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 0.75rem;
-        color: #9e9e9e;
+        gap: 5px;
+        font-size: 0.72rem;
+        color: var(--muted);
     }
     .legend-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 3px;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        display: inline-block;
     }
 
-    /* ── How it works steps ── */
-    .step-card {
-        background: linear-gradient(135deg, #1a1d23 0%, #22272e 100%);
-        border: 1px solid rgba(79,195,247,0.08);
-        border-radius: 12px;
-        padding: 1.1rem;
+    /* Stat block for home */
+    .stat-block {
         text-align: center;
+        padding: 1.2rem 0.8rem;
     }
-    .step-number {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #4fc3f7;
-        margin-bottom: 0.3rem;
+    .stat-value {
+        font-size: 2.4rem;
+        font-weight: 700;
+        line-height: 1;
     }
-    .step-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #e0e0e0;
-        margin-bottom: 0.3rem;
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 4px;
     }
-    .step-desc {
-        font-size: 0.78rem;
-        color: #6b7280;
-        line-height: 1.4;
+    .stat-context {
+        font-size: 0.72rem;
+        color: #484f58;
+        margin-top: 6px;
     }
 
-    /* ── Sidebar info ── */
-    .sidebar-info {
-        background: rgba(79,195,247,0.06);
-        border-radius: 10px;
-        padding: 0.8rem;
-        font-size: 0.78rem;
-        color: #6b7280;
-        line-height: 1.5;
-        margin-top: 1rem;
-    }
+    /* Hide streamlit defaults */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -341,8 +230,6 @@ if 'reward_weights' not in st.session_state:
 
 # ── Simulation Engine ────────────────────────────────────────────────────────
 class TrafficSimulation:
-    """Manages the real-time traffic simulation"""
-
     def __init__(self, model_path: str = None):
         self.model_path = model_path or paths_config.MULTI_AGENT_MODEL
         self.env = None
@@ -351,7 +238,6 @@ class TrafficSimulation:
         self.initialized = False
         self.current_step = 0
         self.max_steps = sc.SIMULATION_STEPS
-
         self.current_wait_time = 0
         self.current_co2 = 0
         self.current_throughput = 0
@@ -374,7 +260,7 @@ class TrafficSimulation:
                 self.model = PPO.load(self.model_path, env=self.env)
             return True
         except Exception as e:
-            st.error(f"Failed to initialize: {e}")
+            st.error(f"Init failed: {e}")
             self.initialized = False
             return False
 
@@ -402,7 +288,7 @@ class TrafficSimulation:
                 'phases': self.intersection_phases.copy()
             }
         except Exception as e:
-            st.error(f"Simulation step failed: {e}")
+            st.error(f"Step failed: {e}")
             self.initialized = False
             return None
 
@@ -429,235 +315,136 @@ class TrafficSimulation:
         except Exception: pass
 
 
-# ── Helper: render intersection grid as HTML ─────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────────────────
 def render_grid_html(phases: Dict[str, int]) -> str:
     phase_css = {0: 'phase-ns-green', 1: 'phase-ns-yellow', 2: 'phase-ew-green', 3: 'phase-ew-yellow'}
-    phase_label = {0: '↕ NS Green', 1: '↕ NS Yellow', 2: '↔ EW Green', 3: '↔ EW Yellow'}
-
+    phase_label = {0: 'NS', 1: 'NS', 2: 'EW', 3: 'EW'}
     cells = ""
     for i in range(sc.NUM_INTERSECTIONS):
         p = phases.get(f"I{i}", 0)
-        cells += f'<div class="grid-cell {phase_css[p]}">I{i}<br><span style="font-size:0.72rem;font-weight:400">{phase_label[p]}</span></div>'
-
-    return f"""
-    <div style="display:grid; grid-template-columns:repeat({sc.GRID_SIZE},1fr); gap:10px; max-width:420px;">
-        {cells}
-    </div>
-    """
+        cells += f'<div class="grid-cell {phase_css[p]}">I{i}<br><span style="font-size:0.7rem;font-weight:400;opacity:0.8">{phase_label[p]}</span></div>'
+    return f'<div style="display:grid; grid-template-columns:repeat({sc.GRID_SIZE},1fr); gap:8px; max-width:380px;">{cells}</div>'
 
 
-def render_grid_legend() -> str:
-    """Render a color legend explaining what each grid cell color means."""
-    return """
-    <div class="grid-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#2e7d32;"></div>North-South Green</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f9a825;"></div>North-South Yellow</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#1565c0;"></div>East-West Green</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#ef6c00;"></div>East-West Yellow</div>
-    </div>
-    """
-
-
-# ── Helper: lightweight trend chart ──────────────────────────────────────────
-def render_trend_chart(history):
+def render_trend(history):
     if len(history['timestamps']) < 2:
         return None
     n = min(50, len(history['timestamps']))
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(go.Scatter(
         x=history['timestamps'][-n:], y=history['wait_times'][-n:],
-        name="Wait", line=dict(color='#4fc3f7', width=2),
-        fill='tozeroy', fillcolor='rgba(79,195,247,0.08)'
+        name="Wait", line=dict(color='#58a6ff', width=2),
+        fill='tozeroy', fillcolor='rgba(88,166,255,0.06)'
     ), secondary_y=False)
     fig.add_trace(go.Scatter(
         x=history['timestamps'][-n:], y=history['co2_emissions'][-n:],
-        name="CO₂", line=dict(color='#ef5350', width=2, dash='dot')
+        name="CO2", line=dict(color='#f85149', width=1.5, dash='dot')
     ), secondary_y=True)
     fig.update_layout(
-        height=220, margin=dict(l=0, r=0, t=5, b=0),
+        height=200, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation='h', y=1.12, x=0, font=dict(size=11)),
-        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)')
+        legend=dict(orientation='h', y=1.1, x=0, font=dict(size=10, color='#8b949e')),
+        xaxis=dict(showgrid=False, color='#484f58'),
+        yaxis=dict(showgrid=True, gridcolor='rgba(48,54,61,0.6)', color='#484f58')
     )
-    fig.update_yaxes(title_text="Vehicles Waiting", secondary_y=False, showgrid=False)
-    fig.update_yaxes(title_text="CO₂ (mg/s)", secondary_y=True, showgrid=False)
+    fig.update_yaxes(title_text="Waiting", secondary_y=False, showgrid=False, title_font=dict(size=10))
+    fig.update_yaxes(title_text="CO2", secondary_y=True, showgrid=False, title_font=dict(size=10))
     return fig
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  PAGE 0: HOME / OVERVIEW
+#  HOME
 # ══════════════════════════════════════════════════════════════════════════════
 def page_home():
-    """Welcome page with project overview and quick navigation."""
-
-    # Hero Section
-    st.markdown('<div class="hero-title">🚦 Smart Traffic RL System</div>', unsafe_allow_html=True)
+    st.markdown("## Smart Traffic RL")
     st.markdown(
-        '<div class="hero-subtitle">'
-        'An AI-powered traffic signal control system using Multi-Agent Reinforcement Learning (MAPPO) '
-        'to reduce congestion, cut emissions, and save lives.'
-        '</div>',
-        unsafe_allow_html=True
+        "Multi-agent reinforcement learning system for adaptive traffic signal control. "
+        "Trained on a 3x3 SUMO intersection grid using MAPPO."
     )
 
     st.divider()
-
-    # Impact cards
-    st.markdown("### 🌍 Measured Impact")
-    st.markdown(
-        '<div class="page-info">'
-        'These results were measured by comparing our RL agent against a traditional fixed-time traffic signal baseline across a simulated 3×3 intersection grid.'
-        '</div>',
-        unsafe_allow_html=True
-    )
 
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown(
-            '<div class="impact-card">'
-            '<div class="impact-number" style="color: #4fc3f7;">45.9%</div>'
-            '<div class="impact-label">Wait Time Reduction</div>'
-            '<div class="impact-desc">Saving 68,000+ vehicle-hours annually per intersection</div>'
-            '</div>',
-            unsafe_allow_html=True
+            '<div class="stat-block">'
+            '<div class="stat-value" style="color:#3fb950">45.9%</div>'
+            '<div class="stat-label">wait time reduction</div>'
+            '<div class="stat-context">~68k vehicle-hours saved/year per intersection</div>'
+            '</div>', unsafe_allow_html=True
         )
     with c2:
         st.markdown(
-            '<div class="impact-card">'
-            '<div class="impact-number" style="color: #66bb6a;">32.0%</div>'
-            '<div class="impact-label">CO₂ Emission Cut</div>'
-            '<div class="impact-desc">Equivalent to removing 27 cars from the road per intersection</div>'
-            '</div>',
-            unsafe_allow_html=True
+            '<div class="stat-block">'
+            '<div class="stat-value" style="color:#58a6ff">32.0%</div>'
+            '<div class="stat-label">lower CO2 emissions</div>'
+            '<div class="stat-context">about 27 fewer cars worth per intersection</div>'
+            '</div>', unsafe_allow_html=True
         )
     with c3:
         st.markdown(
-            '<div class="impact-card">'
-            '<div class="impact-number" style="color: #ffa726;">89.3%</div>'
-            '<div class="impact-label">Emergency Clearance</div>'
-            '<div class="impact-desc">Faster ambulance & fire truck priority through intersections</div>'
-            '</div>',
-            unsafe_allow_html=True
+            '<div class="stat-block">'
+            '<div class="stat-value" style="color:#d29922">89.3%</div>'
+            '<div class="stat-label">emergency clearance rate</div>'
+            '<div class="stat-context">avg 28.3s clearance time</div>'
+            '</div>', unsafe_allow_html=True
         )
 
-    st.markdown("")
     st.divider()
 
-    # How it works
-    st.markdown("### 🧠 How It Works")
-    s1, s2, s3, s4 = st.columns(4)
-    with s1:
-        st.markdown(
-            '<div class="step-card">'
-            '<div class="step-number">1</div>'
-            '<div class="step-title">Simulate</div>'
-            '<div class="step-desc">SUMO generates a realistic 3×3 intersection grid with vehicles, rush hours & emergencies</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-    with s2:
-        st.markdown(
-            '<div class="step-card">'
-            '<div class="step-number">2</div>'
-            '<div class="step-title">Train</div>'
-            '<div class="step-desc">A PPO agent learns optimal signal timing via curriculum learning (100→500 vehicles)</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-    with s3:
-        st.markdown(
-            '<div class="step-card">'
-            '<div class="step-number">3</div>'
-            '<div class="step-title">Scale</div>'
-            '<div class="step-desc">Trained weights transfer to 9 MAPPO agents that coordinate across the full grid</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
-    with s4:
-        st.markdown(
-            '<div class="step-card">'
-            '<div class="step-number">4</div>'
-            '<div class="step-title">Optimize</div>'
-            '<div class="step-desc">Shared rewards balance throughput, wait time, CO₂ & emergency response</div>'
-            '</div>',
-            unsafe_allow_html=True
-        )
+    st.markdown("### Pipeline")
+    st.markdown("""
+    1. **SUMO simulation** generates realistic traffic on a 3x3 grid — rush hours, random flows, emergency vehicles
+    2. A **PPO agent** is trained on the center intersection first (curriculum: 100 to 500 vehicles)
+    3. Weights transfer to **9 MAPPO agents**, one per intersection, with shared global rewards
+    4. Reward balances throughput, wait times, emissions, and emergency priority
+    """)
 
     st.markdown("")
-    st.divider()
 
-    # Quick navigation guide
-    st.markdown("### 🧭 Dashboard Guide")
-    st.markdown(
-        '<div class="page-info">'
-        'Use the <b>sidebar on the left</b> to navigate between pages. Here\'s what each page offers:'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    g1, g2 = st.columns(2)
-    with g1:
-        st.markdown("""
-        **🟢 Live Simulation**
-        > Watch the RL agent control traffic signals in real-time on a 3×3 grid. Start, pause, and reset the simulation.
-
-        **📊 Performance**
-        > Compare the RL agent's results against a traditional fixed-time baseline with charts and key metrics.
-        """)
-    with g2:
-        st.markdown("""
-        **🧠 Explainer (XAI)**
-        > Understand *why* the agent made a specific decision — see feature importance and action probabilities.
-
-        **⚙️ Configuration**
-        > Adjust the reward weights (throughput, wait time, emissions, emergency) used during training.
-        """)
+    st.markdown("### Adversarial robustness")
+    rob_data = pd.DataFrame({
+        "Scenario": ["Lane blockage (accident)", "Sensor failure (2 lanes)", "Emergency vehicle injection"],
+        "Result": ["1.23x queue increase", "18.5% performance drop", "85.2% clearance, 28.3s avg"],
+        "Verdict": ["Excellent", "Graceful degradation", "Strong"]
+    })
+    st.dataframe(rob_data, hide_index=True, use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  PAGE 1: LIVE SIMULATION
+#  LIVE SIMULATION
 # ══════════════════════════════════════════════════════════════════════════════
 def page_live_simulation():
-    """Live simulation view — buttons are in the main page, data updates in a fragment"""
-
     if 'sim' not in st.session_state:
         st.session_state.sim = TrafficSimulation()
 
-    # ── Status bar ────────────────────────────────────────────────────────
     sim = st.session_state.sim
-    if st.session_state.simulation_running and sim.initialized:
-        st.markdown('<span class="status-badge status-running">● RUNNING</span>', unsafe_allow_html=True)
-    elif sim.initialized:
-        st.markdown('<span class="status-badge status-paused">● PAUSED</span>', unsafe_allow_html=True)
-    else:
-        st.markdown('<span class="status-badge status-stopped">● STOPPED</span>', unsafe_allow_html=True)
 
-    st.markdown("## 🚦 Real-time Traffic Simulation")
+    col_title, col_status = st.columns([4, 1])
+    with col_title:
+        st.markdown("## Live Simulation")
+    with col_status:
+        if st.session_state.simulation_running and sim.initialized:
+            st.markdown('<span class="status-pill pill-live">live</span>', unsafe_allow_html=True)
+        elif sim.initialized:
+            st.markdown('<span class="status-pill pill-paused">paused</span>', unsafe_allow_html=True)
+        else:
+            st.markdown('<span class="status-pill pill-idle">idle</span>', unsafe_allow_html=True)
 
-    # Page description
-    st.markdown(
-        '<div class="page-info">'
-        '🔍 <b>What am I looking at?</b> — This page runs a live SUMO traffic simulation. '
-        'The colored grid below represents 9 intersections in a 3×3 layout. Each cell shows the current '
-        'signal phase (which direction has green). The RL agent decides when to switch signals to minimize '
-        'wait times and emissions. Click <b>▶ Start</b> to begin!'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.caption("Run the trained RL agent on the SUMO traffic grid in real time.")
 
-    # ── Control buttons ───────────────────────────────────────────────────
-    c1, c2, c3, _ = st.columns([1, 1, 1, 3])
+    c1, c2, c3, _ = st.columns([1, 1, 1, 4])
     with c1:
-        if st.button("▶  Start", key="btn_start", help="Launch the SUMO simulation and let the RL agent take control"):
+        if st.button("Start", key="btn_start", use_container_width=True):
             if not sim.initialized:
-                with st.spinner("Launching SUMO…"):
+                with st.spinner("Starting SUMO..."):
                     sim.initialize()
             st.session_state.simulation_running = True
     with c2:
-        if st.button("⏸  Pause", key="btn_pause", help="Pause the simulation without resetting progress"):
+        if st.button("Pause", key="btn_pause", use_container_width=True):
             st.session_state.simulation_running = False
     with c3:
-        if st.button("↻  Reset", key="btn_reset", help="Stop the simulation and clear all data"):
+        if st.button("Reset", key="btn_reset", use_container_width=True):
             sim.reset()
             st.session_state.sim = TrafficSimulation()
             st.session_state.simulation_running = False
@@ -668,86 +455,69 @@ def page_live_simulation():
 
     st.divider()
 
-    # ── Fragment: auto-refreshing simulation panel ────────────────────────
     @st.fragment(run_every=1.5 if st.session_state.simulation_running and sim.initialized else None)
-    def simulation_panel():
+    def sim_panel():
         sim = st.session_state.sim
-        if st.session_state.simulation_running and sim.initialized:
-            metrics = sim.step()
-        else:
-            metrics = None
+        metrics = sim.step() if (st.session_state.simulation_running and sim.initialized) else None
 
-        # Layout: grid | metrics
         left, right = st.columns([3, 2])
 
         with left:
-            st.markdown("#### 🗺️ Intersection Grid")
-            st.markdown(render_grid_legend(), unsafe_allow_html=True)
-            phases = sim.intersection_phases if metrics is None else metrics['phases']
+            st.markdown("**Signal grid**")
+            st.markdown(
+                '<div class="legend">'
+                '<span><div class="legend-dot" style="background:#1a3a1a;border:1px solid #2d5a2d"></div>NS green</span>'
+                '<span><div class="legend-dot" style="background:#3a3010;border:1px solid #5a4a20"></div>NS yellow</span>'
+                '<span><div class="legend-dot" style="background:#102a4a;border:1px solid #1a3a5a"></div>EW green</span>'
+                '<span><div class="legend-dot" style="background:#3a2510;border:1px solid #5a3a20"></div>EW yellow</span>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+            phases = metrics['phases'] if metrics else sim.intersection_phases
             st.markdown(render_grid_html(phases), unsafe_allow_html=True)
 
-            # Trend chart
+            st.markdown("")
             history = st.session_state.metrics_history
-            if len(history['timestamps']) >= 2:
-                st.markdown("#### 📈 Live Trends")
-                fig = render_trend_chart(history)
-                if fig:
-                    st.plotly_chart(fig, use_container_width=True, key=f"trend_{sim.current_step}")
-            else:
-                st.caption("📈 *Trend chart will appear after a few simulation steps.*")
+            fig = render_trend(history)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True, key=f"t_{sim.current_step}")
+            elif not metrics:
+                st.caption("Trend chart appears once simulation starts.")
 
         with right:
-            st.markdown("#### 📋 Live Metrics")
             if metrics:
-                st.session_state.metrics_history['timestamps'].append(datetime.now())
-                st.session_state.metrics_history['wait_times'].append(metrics['wait_time'])
-                st.session_state.metrics_history['co2_emissions'].append(metrics['co2'])
-                st.session_state.metrics_history['throughput'].append(metrics['throughput'])
+                history = st.session_state.metrics_history
+                history['timestamps'].append(datetime.now())
+                history['wait_times'].append(metrics['wait_time'])
+                history['co2_emissions'].append(metrics['co2'])
+                history['throughput'].append(metrics['throughput'])
 
-                st.metric("🕐 Vehicles Waiting", metrics['wait_time'],
-                          help="Number of vehicles currently stopped at red lights across the network")
-                st.metric("🌿 Network CO₂", f"{metrics['co2']:,} mg/s",
-                          help="Total CO₂ emissions from all vehicles in milligrams per second")
-                st.metric("🚗 Throughput", f"{metrics['throughput']} veh/min",
-                          help="Vehicles successfully passing through intersections per minute")
-                e_label = "🚨 Active" if metrics['emergency_count'] > 0 else "✅ None"
-                st.metric("🚑 Emergency", e_label,
-                          help="Emergency vehicles (ambulance/fire) currently in the network — the agent prioritizes their clearance")
-                st.metric("📊 Step", f"{metrics['step']} / {sim.max_steps}",
-                          help="Current simulation timestep out of the total")
+                st.metric("Vehicles waiting", metrics['wait_time'])
+                st.metric("CO2 output", f"{metrics['co2']:,} mg/s")
+                st.metric("Throughput", f"{metrics['throughput']} veh/min")
+                emergency_str = f"{metrics['emergency_count']} active" if metrics['emergency_count'] > 0 else "none"
+                st.metric("Emergency vehicles", emergency_str)
+                st.caption(f"Step {metrics['step']} / {sim.max_steps}")
             else:
-                st.info("Press **▶ Start** to begin the simulation.")
+                st.info("Hit **Start** to run the simulation.")
 
-    simulation_panel()
+    sim_panel()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  PAGE 2: PERFORMANCE COMPARISON
+#  PERFORMANCE
 # ══════════════════════════════════════════════════════════════════════════════
-def page_performance_comparison():
-    st.markdown("## 📊 Performance Comparison")
-    st.markdown("##### RL Agent vs Fixed-Time Baseline")
-
-    st.markdown(
-        '<div class="page-info">'
-        '🔍 <b>What am I looking at?</b> — This page compares our trained RL agent against a traditional '
-        'fixed-time traffic signal (the kind used in most cities today). The metrics below show how much better '
-        'the AI performs. The charts visualize this improvement over training epochs.'
-        '</div>',
-        unsafe_allow_html=True
-    )
+def page_performance():
+    st.markdown("## Performance")
+    st.caption("RL agent vs fixed-time baseline across key metrics.")
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("Wait Time Reduction", "45.2 %", delta="-18s avg", delta_color="inverse",
-              help="The RL agent reduces average vehicle wait time by 45.2% compared to fixed signals")
-    m2.metric("CO₂ Reduction", "31.8 %", delta="-4,200 mg/s", delta_color="inverse",
-              help="Total network carbon emissions dropped by 31.8%")
-    m3.metric("Throughput Gain", "+24.5 %", delta="+12 veh/min",
-              help="24.5% more vehicles pass through the network per minute")
+    m1.metric("Wait time", "-45.2%", delta="-18s avg", delta_color="inverse")
+    m2.metric("CO2 emissions", "-31.8%", delta="-4,200 mg/s", delta_color="inverse")
+    m3.metric("Throughput", "+24.5%", delta="+12 veh/min")
 
     st.divider()
 
-    # Demo comparison chart
     steps = list(range(1, 51))
     baseline_wait = [55 + random.gauss(0, 8) for _ in steps]
     rl_wait = [30 + random.gauss(0, 6) for _ in steps]
@@ -756,219 +526,159 @@ def page_performance_comparison():
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("#### ⏱️ Average Wait Time")
-        st.caption("*Lower is better* — Red = baseline, Blue = RL agent")
+        st.markdown("**Wait time (seconds)**")
+        st.caption("Red = fixed-time, Blue = RL agent")
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=steps, y=baseline_wait, name="Baseline (Fixed-Time)", line=dict(color='#ef5350', width=2)))
-        fig.add_trace(go.Scatter(x=steps, y=rl_wait, name="RL Agent (MAPPO)", line=dict(color='#4fc3f7', width=2), fill='tonexty', fillcolor='rgba(79,195,247,0.08)'))
-        fig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0),
+        fig.add_trace(go.Scatter(x=steps, y=baseline_wait, name="Fixed-time", line=dict(color='#f85149', width=2)))
+        fig.add_trace(go.Scatter(x=steps, y=rl_wait, name="RL (MAPPO)", line=dict(color='#58a6ff', width=2),
+                                 fill='tonexty', fillcolor='rgba(88,166,255,0.06)'))
+        fig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0),
                           paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                          xaxis=dict(title="Epoch", showgrid=False), yaxis=dict(title="Seconds", showgrid=True, gridcolor='rgba(255,255,255,0.06)'))
+                          legend=dict(font=dict(size=10, color='#8b949e')),
+                          xaxis=dict(title="Epoch", showgrid=False, color='#484f58'),
+                          yaxis=dict(title="Seconds", showgrid=True, gridcolor='rgba(48,54,61,0.5)', color='#484f58'))
         st.plotly_chart(fig, use_container_width=True)
+
     with c2:
-        st.markdown("#### 🌿 CO₂ Emissions")
-        st.caption("*Lower is better* — Red = baseline, Green = RL agent")
+        st.markdown("**CO2 emissions (mg/s)**")
+        st.caption("Red = fixed-time, Green = RL agent")
         fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=steps, y=baseline_co2, name="Baseline (Fixed-Time)", line=dict(color='#ef5350', width=2)))
-        fig2.add_trace(go.Scatter(x=steps, y=rl_co2, name="RL Agent (MAPPO)", line=dict(color='#66bb6a', width=2), fill='tonexty', fillcolor='rgba(102,187,106,0.08)'))
-        fig2.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0),
+        fig2.add_trace(go.Scatter(x=steps, y=baseline_co2, name="Fixed-time", line=dict(color='#f85149', width=2)))
+        fig2.add_trace(go.Scatter(x=steps, y=rl_co2, name="RL (MAPPO)", line=dict(color='#3fb950', width=2),
+                                  fill='tonexty', fillcolor='rgba(63,185,80,0.06)'))
+        fig2.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0),
                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                           xaxis=dict(title="Epoch", showgrid=False), yaxis=dict(title="mg/s", showgrid=True, gridcolor='rgba(255,255,255,0.06)'))
+                           legend=dict(font=dict(size=10, color='#8b949e')),
+                           xaxis=dict(title="Epoch", showgrid=False, color='#484f58'),
+                           yaxis=dict(title="mg/s", showgrid=True, gridcolor='rgba(48,54,61,0.5)', color='#484f58'))
         st.plotly_chart(fig2, use_container_width=True)
 
-    # Interpretation help
-    with st.expander("💡 How to read these charts"):
-        st.markdown("""
-        - **Red line** = Traditional fixed-time signal (baseline) — cycles through green/yellow/red on a fixed timer regardless of traffic.
-        - **Blue/Green line** = Our RL agent (MAPPO) — adapts signal timing based on real-time traffic conditions.
-        - The **shaded area** between the lines represents the improvement gained by using AI.
-        - **Epoch** = One complete training iteration. The agent improves with more training.
-        """)
-
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  PAGE 3: DECISION EXPLAINER
+#  EXPLAINER
 # ══════════════════════════════════════════════════════════════════════════════
-def page_decision_explainer():
-    st.markdown("## 🧠 Decision Explainer (XAI)")
-    st.markdown("##### Understanding Why the Agent Made Its Decision")
-
-    st.markdown(
-        '<div class="page-info">'
-        '🔍 <b>What am I looking at?</b> — This is the Explainable AI (XAI) panel. It shows two things: '
-        '(1) <b>Feature Importance</b> — which traffic conditions the agent cares about most when deciding, and '
-        '(2) <b>Action Probabilities</b> — how confident the agent is about each possible action. '
-        'This helps us understand and trust the AI\'s decisions.'
-        '</div>',
-        unsafe_allow_html=True
-    )
+def page_explainer():
+    st.markdown("## Decision Explainer")
+    st.caption("Breakdown of what the agent considers when choosing a signal phase.")
 
     st.divider()
 
-    c1, c2 = st.columns([1, 1])
+    c1, c2 = st.columns(2)
     with c1:
-        st.markdown("#### 📊 Feature Importance")
-        st.caption("*Which traffic conditions influence the agent's decision the most?*")
-        features = ['Queue Length', 'Wait Time', 'Avg Speed', 'CO₂ Level', 'Emergency', 'Phase Duration', 'Neighbor Queue', 'Time of Day']
+        st.markdown("**Feature importance**")
+        features = ['Queue length', 'Wait time', 'Avg speed', 'CO2 level',
+                     'Emergency', 'Phase duration', 'Neighbor queue', 'Time of day']
         importance = sorted([random.uniform(0.02, 0.3) for _ in features], reverse=True)
         fig = go.Figure(go.Bar(
             x=importance, y=features, orientation='h',
-            marker=dict(color=importance, colorscale=[[0, '#4fc3f7'], [1, '#ef5350']]),
-            hovertemplate='<b>%{y}</b><br>Importance: %{x:.3f}<extra></extra>'
+            marker=dict(color=importance, colorscale=[[0, '#58a6ff'], [1, '#f85149']])
         ))
-        fig.update_layout(height=350, margin=dict(l=0, r=0, t=5, b=0),
+        fig.update_layout(height=320, margin=dict(l=0, r=10, t=5, b=0),
                           paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                          xaxis=dict(title="Importance Score", showgrid=True, gridcolor='rgba(255,255,255,0.06)'),
-                          yaxis=dict(showgrid=False))
+                          xaxis=dict(title="Weight", showgrid=True, gridcolor='rgba(48,54,61,0.5)', color='#484f58'),
+                          yaxis=dict(showgrid=False, color='#8b949e'))
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.markdown("#### 🎯 Action Probabilities")
-        st.caption("*How confident is the agent about each possible action?*")
-        actions = ['Keep Current Phase', 'Switch NS → EW', 'Switch EW → NS']
+        st.markdown("**Action probabilities**")
+        actions = ['Keep phase', 'NS to EW', 'EW to NS']
         probs = np.random.dirichlet([3, 1, 1]).tolist()
-        colors = ['#4fc3f7', '#66bb6a', '#ffa726']
         fig2 = go.Figure(go.Bar(
             x=actions, y=probs,
-            marker=dict(color=colors),
-            text=[f"{p:.1%}" for p in probs], textposition='outside',
-            hovertemplate='<b>%{x}</b><br>Probability: %{y:.1%}<extra></extra>'
+            marker=dict(color=['#58a6ff', '#3fb950', '#d29922']),
+            text=[f"{p:.0%}" for p in probs], textposition='outside',
+            textfont=dict(color='#8b949e', size=11)
         ))
-        fig2.update_layout(height=350, margin=dict(l=0, r=0, t=5, b=0),
+        fig2.update_layout(height=320, margin=dict(l=0, r=0, t=5, b=0),
                            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                           yaxis=dict(title="Probability", showgrid=True, gridcolor='rgba(255,255,255,0.06)', range=[0, 1]),
-                           xaxis=dict(showgrid=False))
+                           yaxis=dict(title="Probability", showgrid=True, gridcolor='rgba(48,54,61,0.5)',
+                                      range=[0, 1], color='#484f58'),
+                           xaxis=dict(showgrid=False, color='#8b949e'))
         st.plotly_chart(fig2, use_container_width=True)
 
-    # Explanation box
-    with st.expander("💡 What do these charts mean?", expanded=True):
-        st.markdown("""
-        **Feature Importance (left chart):**
-        - Shows which inputs the RL agent relies on most to make decisions.
-        - **Queue Length** and **Wait Time** are typically the most important — the agent prioritizes clearing congestion.
-        - **Emergency** presence triggers an immediate override to give priority to ambulances and fire trucks.
-
-        **Action Probabilities (right chart):**
-        - Shows the agent's confidence level for each possible action at the current moment.
-        - The tallest bar is the action the agent chose.
-        - A very tall bar means the agent is very confident. Similar-height bars mean the decision was close.
-
-        **Actions explained:**
-        - 🔵 **Keep Current Phase** — Continue the current green light direction.
-        - 🟢 **Switch NS → EW** — Change from North-South green to East-West green.
-        - 🟠 **Switch EW → NS** — Change from East-West green to North-South green.
-        """)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  PAGE 4: CONFIGURATION
-# ══════════════════════════════════════════════════════════════════════════════
-def page_configuration():
-    st.markdown("## ⚙️ Configuration")
-    st.markdown("##### Tune Reward Weights for RL Training")
-
     st.markdown(
-        '<div class="page-info">'
-        '🔍 <b>What am I looking at?</b> — The RL agent learns by receiving "rewards" — a score that tells it '
-        'how well it performed. This page lets you adjust <b>how much weight</b> each objective gets in the reward '
-        'formula. For example, increasing the Emissions Penalty makes the agent prioritize cleaner air over raw speed.'
-        '</div>',
-        unsafe_allow_html=True
+        "Queue length and wait time tend to dominate decision-making. "
+        "When an emergency vehicle is detected, the agent overrides to clear the path immediately."
     )
 
-    st.divider()
 
-    # Reward formula display
-    st.markdown("**Reward Formula:**")
-    st.code("R = (throughput_weight × throughput) + (wait_penalty × wait_time) + (emissions_penalty × CO₂) + (emergency_bonus)", language=None)
+# ══════════════════════════════════════════════════════════════════════════════
+#  CONFIG
+# ══════════════════════════════════════════════════════════════════════════════
+def page_config():
+    st.markdown("## Reward Configuration")
+    st.caption("Adjust the reward function weights used during training.")
+
+    st.markdown("")
+    st.code("R = w1*throughput + w2*wait_penalty + w3*CO2_penalty + w4*emergency_bonus", language=None)
     st.markdown("")
 
     c1, c2 = st.columns(2)
     with c1:
         st.session_state.reward_weights['throughput'] = st.slider(
-            "🚗 Throughput Weight", 0.0, 1.0, float(env_config.REWARD_THROUGHPUT_WEIGHT), 0.05,
-            help="How much to reward the agent for maximizing the number of vehicles passing through. Higher = agent prioritizes keeping traffic flowing.")
+            "Throughput weight (w1)", 0.0, 1.0,
+            float(env_config.REWARD_THROUGHPUT_WEIGHT), 0.05)
         st.session_state.reward_weights['wait_time'] = st.slider(
-            "🕐 Wait Time Penalty", -1.0, 0.0, float(env_config.REWARD_WAIT_WEIGHT), 0.05,
-            help="Penalty for vehicles waiting at red lights. More negative = agent tries harder to minimize wait times.")
+            "Wait time penalty (w2)", -1.0, 0.0,
+            float(env_config.REWARD_WAIT_WEIGHT), 0.05)
     with c2:
         st.session_state.reward_weights['emissions'] = st.slider(
-            "🌿 Emissions Penalty", -0.5, 0.0, float(env_config.REWARD_EMISSIONS_WEIGHT), 0.05,
-            help="Penalty for CO₂ emissions. More negative = agent prioritizes reducing pollution (may sacrifice some throughput).")
+            "Emissions penalty (w3)", -0.5, 0.0,
+            float(env_config.REWARD_EMISSIONS_WEIGHT), 0.05)
         st.session_state.reward_weights['emergency'] = st.slider(
-            "🚑 Emergency Bonus", 0.0, 200.0, float(env_config.REWARD_EMERGENCY_BONUS), 5.0,
-            help="Bonus reward when the agent successfully clears a path for emergency vehicles. Higher = stronger priority for ambulances/fire trucks.")
+            "Emergency bonus (w4)", 0.0, 200.0,
+            float(env_config.REWARD_EMERGENCY_BONUS), 5.0)
 
     st.divider()
 
-    # Visual summary of weights
-    st.markdown("#### 📊 Current Weight Distribution")
     w = st.session_state.reward_weights
     fig = go.Figure(go.Bar(
-        x=['Throughput', 'Wait Penalty', 'Emissions Penalty', 'Emergency Bonus'],
+        x=['Throughput', 'Wait penalty', 'Emissions', 'Emergency'],
         y=list(w.values()),
-        marker=dict(color=['#4fc3f7', '#ef5350', '#66bb6a', '#ffa726']),
+        marker=dict(color=['#58a6ff', '#f85149', '#3fb950', '#d29922']),
         text=[f"{v:.2f}" for v in w.values()], textposition='outside',
-        hovertemplate='<b>%{x}</b><br>Weight: %{y:.2f}<extra></extra>'
+        textfont=dict(color='#8b949e', size=11)
     ))
-    fig.update_layout(height=280,
-                      margin=dict(l=0, r=0, t=10, b=0),
+    fig.update_layout(height=250, margin=dict(l=0, r=0, t=5, b=0),
                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                      yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.06)'),
-                      xaxis=dict(showgrid=False))
+                      yaxis=dict(showgrid=True, gridcolor='rgba(48,54,61,0.5)', color='#484f58'),
+                      xaxis=dict(showgrid=False, color='#8b949e'))
     st.plotly_chart(fig, use_container_width=True)
 
-    if st.button("💾  Apply Configuration", key="btn_apply", help="Save these weights — they will be used in the next training run"):
-        st.success("✅ Configuration saved! Changes will apply on next training run.")
-
-    # Tips
-    with st.expander("💡 Tips for tuning rewards"):
-        st.markdown("""
-        - **Balanced approach:** Keep throughput and wait penalty roughly equal for a well-rounded agent.
-        - **Eco-friendly mode:** Increase the emissions penalty to make the agent prioritize cleaner air.
-        - **Emergency priority:** Set the emergency bonus high (100+) to ensure ambulances always get priority.
-        - **Speed-first mode:** Maximize throughput weight and minimize emissions penalty for maximum vehicle flow.
-        """)
+    if st.button("Save configuration", key="btn_apply"):
+        st.success("Saved. Changes apply on next training run.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  MAIN
 # ══════════════════════════════════════════════════════════════════════════════
 def main():
-    # ── Sidebar ──────────────────────────────────────────────────────────
-    st.sidebar.markdown("# 🚦 Smart Traffic RL")
-    st.sidebar.caption("AI-Powered Traffic Signal Control")
+    st.sidebar.markdown("# Smart Traffic RL")
+    st.sidebar.caption("Adaptive signal control with MAPPO")
     st.sidebar.divider()
 
     page = st.sidebar.radio(
-        "Navigate",
-        ["🏠 Home", "🟢 Live Simulation", "📊 Performance", "🧠 Explainer", "⚙️ Config"],
+        "Navigation",
+        ["Home", "Live Simulation", "Performance", "Explainer", "Config"],
         label_visibility="collapsed"
     )
 
-    # Sidebar: About section
     st.sidebar.divider()
-    st.sidebar.markdown(
-        '<div class="sidebar-info">'
-        '<b>About this project</b><br>'
-        'Uses MAPPO (Multi-Agent PPO) to control 9 traffic signals in a 3×3 grid. '
-        'Built with SUMO, Stable-Baselines3, PettingZoo & Streamlit.<br><br>'
-        '📄 <a href="https://github.com/Nitin-Saroj1703/smart-traffic-rl" target="_blank" style="color:#4fc3f7;">View on GitHub</a>'
-        '</div>',
-        unsafe_allow_html=True
+    st.sidebar.caption(
+        "Built with SUMO, Stable-Baselines3, PettingZoo\n\n"
+        "[Source code](https://github.com/Nitin-Saroj1703/smart-traffic-rl)"
     )
 
-    # ── Page routing ─────────────────────────────────────────────────────
-    if page == "🏠 Home":
+    if page == "Home":
         page_home()
-    elif page == "🟢 Live Simulation":
+    elif page == "Live Simulation":
         page_live_simulation()
-    elif page == "📊 Performance":
-        page_performance_comparison()
-    elif page == "🧠 Explainer":
-        page_decision_explainer()
-    elif page == "⚙️ Config":
-        page_configuration()
+    elif page == "Performance":
+        page_performance()
+    elif page == "Explainer":
+        page_explainer()
+    elif page == "Config":
+        page_config()
 
 if __name__ == "__main__":
     main()
