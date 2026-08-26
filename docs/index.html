@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Traffic RL — Adaptive Signal Control</title>
+    <meta name="description" content="Multi-agent reinforcement learning system for adaptive traffic signal control using MAPPO on a SUMO simulation grid.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚦</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h1>Smart Traffic RL</h1>
+            <p class="sidebar-sub">Adaptive signal control</p>
+        </div>
+        <div class="sidebar-divider"></div>
+        <ul class="nav-links">
+            <li><a href="#" class="nav-link active" data-page="home">Home</a></li>
+            <li><a href="#" class="nav-link" data-page="simulation">Live Simulation</a></li>
+            <li><a href="#" class="nav-link" data-page="performance">Performance</a></li>
+            <li><a href="#" class="nav-link" data-page="explainer">Explainer</a></li>
+            <li><a href="#" class="nav-link" data-page="config">Config</a></li>
+        </ul>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-footer">
+            <p>Built with SUMO, Stable-Baselines3, PettingZoo</p>
+            <a href="https://github.com/Nitin-Saroj1703/smart-traffic-rl" target="_blank" rel="noopener">Source code</a>
+        </div>
+    </nav>
+
+    <!-- Mobile header -->
+    <header id="mobile-header">
+        <button id="menu-toggle" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+        <h1>Smart Traffic RL</h1>
+    </header>
+
+    <!-- Main content -->
+    <main id="content">
+
+        <!-- HOME -->
+        <section id="page-home" class="page active">
+            <h2>Smart Traffic RL</h2>
+            <p class="page-desc">
+                Multi-agent reinforcement learning system for adaptive traffic signal control.
+                Trained on a 3&times;3 SUMO intersection grid using MAPPO.
+            </p>
+
+            <div class="divider"></div>
+
+            <div class="stats-row">
+                <div class="stat-block">
+                    <div class="stat-value green">45.9%</div>
+                    <div class="stat-label">wait time reduction</div>
+                    <div class="stat-context">~68k vehicle-hours saved/year per intersection</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-value blue">32.0%</div>
+                    <div class="stat-label">lower CO2 emissions</div>
+                    <div class="stat-context">about 27 fewer cars worth per intersection</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-value orange">89.3%</div>
+                    <div class="stat-label">emergency clearance rate</div>
+                    <div class="stat-context">avg 28.3s clearance time</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3>Pipeline</h3>
+            <ol class="pipeline-list">
+                <li><strong>SUMO simulation</strong> generates realistic traffic on a 3&times;3 grid — rush hours, random flows, emergency vehicles</li>
+                <li>A <strong>PPO agent</strong> is trained on the center intersection first (curriculum: 100 to 500 vehicles)</li>
+                <li>Weights transfer to <strong>9 MAPPO agents</strong>, one per intersection, with shared global rewards</li>
+                <li>Reward balances throughput, wait times, emissions, and emergency priority</li>
+            </ol>
+
+            <h3>Adversarial robustness</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Scenario</th><th>Result</th><th>Verdict</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Lane blockage (accident)</td><td>1.23x queue increase</td><td class="verdict-good">Excellent</td></tr>
+                        <tr><td>Sensor failure (2 lanes)</td><td>18.5% performance drop</td><td class="verdict-ok">Graceful degradation</td></tr>
+                        <tr><td>Emergency vehicle injection</td><td>85.2% clearance, 28.3s avg</td><td class="verdict-good">Strong</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SIMULATION -->
+        <section id="page-simulation" class="page">
+            <div class="page-title-row">
+                <h2>Live Simulation</h2>
+                <span id="sim-status" class="status-pill pill-idle">idle</span>
+            </div>
+            <p class="page-caption">Run the trained RL agent on the traffic grid in real time (demo mode).</p>
+
+            <div class="sim-controls">
+                <button id="btn-start" class="btn">Start</button>
+                <button id="btn-pause" class="btn">Pause</button>
+                <button id="btn-reset" class="btn">Reset</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="sim-layout">
+                <div class="sim-left">
+                    <p class="section-label">Signal grid</p>
+                    <div class="grid-legend">
+                        <span><i class="dot" style="background:#1a3a1a;border-color:#2d5a2d"></i>NS green</span>
+                        <span><i class="dot" style="background:#3a3010;border-color:#5a4a20"></i>NS yellow</span>
+                        <span><i class="dot" style="background:#102a4a;border-color:#1a3a5a"></i>EW green</span>
+                        <span><i class="dot" style="background:#3a2510;border-color:#5a3a20"></i>EW yellow</span>
+                    </div>
+                    <div id="intersection-grid" class="intersection-grid"></div>
+                    <div id="trend-chart" class="chart-box"></div>
+                </div>
+                <div class="sim-right">
+                    <div id="sim-metrics">
+                        <p class="start-hint">Hit <strong>Start</strong> to run the simulation.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PERFORMANCE -->
+        <section id="page-performance" class="page">
+            <h2>Performance</h2>
+            <p class="page-caption">RL agent vs fixed-time baseline across key metrics.</p>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-label">Wait time</div>
+                    <div class="metric-value">-45.2%</div>
+                    <div class="metric-delta negative">-18s avg</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">CO2 emissions</div>
+                    <div class="metric-value">-31.8%</div>
+                    <div class="metric-delta negative">-4,200 mg/s</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Throughput</div>
+                    <div class="metric-value">+24.5%</div>
+                    <div class="metric-delta positive">+12 veh/min</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="charts-row">
+                <div class="chart-col">
+                    <p class="section-label">Wait time (seconds)</p>
+                    <p class="chart-caption">Red = fixed-time, Blue = RL agent</p>
+                    <div id="wait-chart" class="chart-box"></div>
+                </div>
+                <div class="chart-col">
+                    <p class="section-label">CO2 emissions (mg/s)</p>
+                    <p class="chart-caption">Red = fixed-time, Green = RL agent</p>
+                    <div id="co2-chart" class="chart-box"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPLAINER -->
+        <section id="page-explainer" class="page">
+            <h2>Decision Explainer</h2>
+            <p class="page-caption">Breakdown of what the agent considers when choosing a signal phase.</p>
+
+            <div class="divider"></div>
+
+            <div class="charts-row">
+                <div class="chart-col">
+                    <p class="section-label">Feature importance</p>
+                    <div id="feature-chart" class="chart-box"></div>
+                </div>
+                <div class="chart-col">
+                    <p class="section-label">Action probabilities</p>
+                    <div id="action-chart" class="chart-box"></div>
+                </div>
+            </div>
+
+            <p class="explainer-note">
+                Queue length and wait time tend to dominate decision-making.
+                When an emergency vehicle is detected, the agent overrides to clear the path immediately.
+            </p>
+        </section>
+
+        <!-- CONFIG -->
+        <section id="page-config" class="page">
+            <h2>Reward Configuration</h2>
+            <p class="page-caption">Adjust the reward function weights used during training.</p>
+
+            <div class="reward-formula">
+                <code>R = w1*throughput + w2*wait_penalty + w3*CO2_penalty + w4*emergency_bonus</code>
+            </div>
+
+            <div class="sliders-grid">
+                <div class="slider-group">
+                    <label for="sl-throughput">Throughput weight (w1)</label>
+                    <input type="range" id="sl-throughput" min="0" max="1" step="0.05" value="0.4">
+                    <span class="slider-val" id="val-throughput">0.40</span>
+                </div>
+                <div class="slider-group">
+                    <label for="sl-wait">Wait time penalty (w2)</label>
+                    <input type="range" id="sl-wait" min="-1" max="0" step="0.05" value="-0.4">
+                    <span class="slider-val" id="val-wait">-0.40</span>
+                </div>
+                <div class="slider-group">
+                    <label for="sl-emissions">Emissions penalty (w3)</label>
+                    <input type="range" id="sl-emissions" min="-0.5" max="0" step="0.05" value="-0.2">
+                    <span class="slider-val" id="val-emissions">-0.20</span>
+                </div>
+                <div class="slider-group">
+                    <label for="sl-emergency">Emergency bonus (w4)</label>
+                    <input type="range" id="sl-emergency" min="0" max="200" step="5" value="100">
+                    <span class="slider-val" id="val-emergency">100</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div id="weights-chart" class="chart-box"></div>
+
+            <button id="btn-save-config" class="btn btn-primary">Save configuration</button>
+            <div id="config-saved" class="save-msg" style="display:none">Saved. Changes apply on next training run.</div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
