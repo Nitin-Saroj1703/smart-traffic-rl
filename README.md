@@ -1,204 +1,337 @@
-# 🚦 Smart Traffic Signal Control with Multi-Agent Reinforcement Learning
+# 🚦 Smart Traffic RL — Adaptive Signal Control
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![SUMO 1.26](https://img.shields.io/badge/SUMO-1.26-green.svg)](https://www.eclipse.org/sumo/)
-[![Stable-Baselines3](https://img.shields.io/badge/SB3-2.3.0-orange.svg)](https://stable-baselines3.readthedocs.io/)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![SUMO](https://img.shields.io/badge/SUMO-1.19+-4CAF50?style=for-the-badge&logo=eclipse&logoColor=white)](https://www.eclipse.org/sumo/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## 🌍 Social Impact Statement
+> Multi-agent reinforcement learning system for adaptive traffic signal control, trained on a 3×3 SUMO intersection grid using **MAPPO** (Multi-Agent Proximal Policy Optimization).
 
-Urban traffic congestion costs the global economy **$1.5 trillion annually** and contributes to **23% of CO2 emissions** worldwide. This project demonstrates that AI-powered traffic control can:
-
-- **Reduce wait times by 45.9%** - saving 68,000+ vehicle-hours annually per intersection
-- **Cut CO2 emissions by 32.0%** - equivalent to removing 27 cars from the road per intersection
-- **Improve emergency response by 89.3%** - potentially saving lives through faster clearance
-
-By open-sourcing this system, we aim to accelerate the adoption of intelligent traffic management in cities worldwide, contributing to UN Sustainable Development Goals 11 (Sustainable Cities) and 13 (Climate Action).
+🔗 **[Live Demo →](https://nitin-saroj1703.github.io/smart-traffic-rl/)**
 
 ---
 
-## 📊 Key Results
+## 🌍 Why This Matters
 
-| Metric | Baseline | Our System | Improvement |
-|--------|----------|------------|-------------|
+Urban traffic congestion costs the global economy **\$1.5 trillion annually** and contributes to **23% of CO₂ emissions** worldwide. This project demonstrates that AI-powered traffic control can make a real difference:
+
+| Metric | Fixed-Time Baseline | RL Agent | Improvement |
+|---|---|---|---|
 | **Avg Wait Time** | 17.0 vehicles | 9.2 vehicles | **↓ 45.9%** |
-| **CO2 Emissions** | 12,500 mg/s | 8,500 mg/s | **↓ 32.0%** |
+| **CO₂ Emissions** | 12,500 mg/s | 8,500 mg/s | **↓ 32.0%** |
 | **Throughput** | 55.9 veh/min | 68.5 veh/min | **↑ 22.5%** |
 | **Emergency Clearance** | 45.0% | 85.2% | **↑ 89.3%** |
 
----
-
-### System Components
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Traffic Simulation | SUMO 1.19 | Realistic urban traffic modeling |
-| RL Environment | Gymnasium + PettingZoo | Multi-agent interface |
-| RL Algorithm | MAPPO (SB3) | Multi-agent policy optimization |
-| Visualization | Streamlit + Plotly | Real-time dashboard |
-| Data Processing | NumPy + Pandas | Metrics computation |
-| Deep Learning | PyTorch | Neural network training |
+> Equivalent to saving **68,000+ vehicle-hours/year** and removing **27 cars** worth of emissions per intersection.
 
 ---
 
 ## 🏗️ Architecture
 
-The system utilizes a **Multi-Agent Reinforcement Learning (MARL)** approach using the **MAPPO** (Multi-Agent Proximal Policy Optimization) algorithm. 
+```
+                 ┌────────────────────────────┐
+                 │      SUMO Simulation       │
+                 │    3×3 Intersection Grid    │
+                 └──────────┬─────────────────┘
+                            │ TraCI API
+                 ┌──────────▼─────────────────┐
+                 │   Gymnasium / PettingZoo    │
+                 │   Multi-Agent Environment   │
+                 └──────────┬─────────────────┘
+                            │ Observations (18-dim)
+              ┌─────────────▼──────────────────┐
+              │     MAPPO (9 Agents, PPO)       │
+              │  Shared global + local rewards  │
+              │    Policy: [256, 256] MLP        │
+              └─────────────┬──────────────────┘
+                            │ Actions
+                   ┌────────▼────────┐
+                   │  Signal Phases  │
+                   │  Keep / Switch  │
+                   │  / Emergency    │
+                   └─────────────────┘
+```
 
-- **Environment**: 3x3 Grid of 9 intersections modeled with PettingZoo and SUMO.
-- **Coordination**: Agents share global rewards to balance local throughput with network-wide stability.
-- **Explainability**: Integrated Decision Explainer for real-time rationale on signal changes.
+### Training Pipeline
+
+1. **SUMO simulation** generates realistic traffic on a 3×3 grid — rush hours, random flows, emergency vehicles
+2. A **PPO agent** is curriculum-trained on the center intersection (`n11`), progressing from 100 → 300 → 500 vehicles
+3. Trained weights transfer to **9 MAPPO agents**, one per intersection, with shared global rewards (40% global + 60% local)
+4. **Reward function** balances throughput, wait times, emissions, and emergency priority
+
+### Reward Function
+
+```
+R = 0.4 × throughput − 0.4 × wait_penalty − 0.2 × CO₂ + emergency_bonus
+```
+
+---
 
 ## 📁 Project Structure
 
 ```
 smart-traffic-rl/
-├── main.py                          # Unified menu-driven entry point
-├── config.py                        # Central hyperparameter & path config
-├── requirements.txt                 # Project dependencies
-├── run_dashboard.py                 # Dashboard launcher
-├── env/                             # Custom Gymnasium & PettingZoo envs
-├── training/                        # Single & Multi-agent training pipelines
-├── simulation/                      # SUMO networks and traffic definitions
-├── dashboard/                       # Streamlit visualization & XAI app
-└── tests/                           # Unit, Environment, and Adversarial tests
+├── main.py                    # Menu-driven entry point (train, eval, test)
+├── config.py                  # Central hyperparameters & path configuration
+├── requirements.txt           # Python dependencies
+│
+├── env/                       # Custom Gymnasium & PettingZoo environments
+│   ├── traffic_env.py         #   Single-agent traffic signal environment
+│   ├── multi_traffic_env.py   #   Multi-agent (9 intersections) environment
+│   └── traffic_signal_env.py  #   Base signal environment
+│
+├── training/                  # Training pipelines
+│   ├── train_single.py        #   PPO curriculum training (3 stages)
+│   ├── train_multi.py         #   MAPPO multi-agent training
+│   └── evaluate.py            #   Evaluation against baselines
+│
+├── agents/                    # Trained model checkpoints (.zip)
+│   ├── ppo_stage1.zip         #   Stage 1: 100 vehicles
+│   ├── ppo_stage2.zip         #   Stage 2: 300 vehicles
+│   └── ppo_stage3.zip         #   Stage 3: 500 vehicles
+│
+├── simulation/                # SUMO network & route definitions
+│   ├── generate_network.py    #   Auto-generates the 3×3 grid
+│   └── networks/              #   Generated .net.xml, .rou.xml, .sumocfg
+│
+├── tests/                     # Test suites
+│   ├── test_sumo.py           #   SUMO connectivity tests
+│   ├── test_env.py            #   Environment unit tests
+│   └── test_adversarial.py    #   Robustness & adversarial tests
+│
+├── utils/                     # Helpers & SUMO utilities
+├── models/                    # Additional model artifacts
+├── docs/                      # Static frontend (GitHub Pages)
+│   ├── index.html             #   Dashboard UI
+│   ├── style.css              #   Styles
+│   └── app.js                 #   Simulation, charts & interactivity
+│
+├── run_training.py            # Quick-start training script
+├── run_multi_agent.py         # Quick-start multi-agent training
+├── run_env_test.py            # Quick-start environment test
+└── Smart_Traffic_RL_Manual.pdf
 ```
+
+---
 
 ## 📦 Installation
 
 ### Prerequisites
 
 - **Python 3.8+**
-- **SUMO 1.19+** (Simulation of Urban MObility)
+- **SUMO 1.19+** ([download](https://sumo.dlr.de/docs/Downloads.php))
 - **pip** package manager
 
-### Step-by-Step Setup
+### Setup
 
-1. **Create and activate virtual environment:**
 ```bash
+# 1. Clone the repository
+git clone https://github.com/Nitin-Saroj1703/smart-traffic-rl.git
+cd smart-traffic-rl
+
+# 2. Create & activate virtual environment
 python -m venv venv
-.\venv\Scripts\activate  # Windows
-source venv/bin/activate # Unix/Linux
-```
+.\venv\Scripts\activate        # Windows
+source venv/bin/activate       # macOS / Linux
 
-2. **Install dependencies:**
-```bash
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-3. **Install SUMO:**
-   - **Windows**: Download from [sumo.dlr.de](https://sumo.dlr.de/docs/Downloads.php) and set `SUMO_HOME`:
-     ```powershell
-     [System.Environment]::SetEnvironmentVariable("SUMO_HOME","C:\Program Files (x86)\Eclipse\Sumo","User")
-     ```
-   - **Ubuntu/Debian**:
-     ```bash
-     sudo add-apt-repository ppa:sumo/stable
-     sudo apt-get update && sudo apt-get install sumo sumo-tools
-     ```
-   - **macOS**:
-     ```bash
-     brew install sumo
-     ```
+### Install SUMO
 
-4. **Generate the SUMO network:**
-```bash
-python main.py --mode train  # Auto-generates if not found
-# Or manually: select option 6 from the menu
+<details>
+<summary><b>Windows</b></summary>
+
+Download from [sumo.dlr.de](https://sumo.dlr.de/docs/Downloads.php) and set the environment variable:
+```powershell
+[System.Environment]::SetEnvironmentVariable("SUMO_HOME", "C:\Program Files (x86)\Eclipse\Sumo", "User")
 ```
+</details>
+
+<details>
+<summary><b>Ubuntu / Debian</b></summary>
+
+```bash
+sudo add-apt-repository ppa:sumo/stable
+sudo apt-get update && sudo apt-get install sumo sumo-tools
+```
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+```bash
+brew install sumo
+```
+</details>
 
 ---
 
 ## 🎮 Usage
 
 ### Interactive Menu
+
 ```bash
 python main.py
 ```
 
-### Direct Command-Line Flags
-```bash
-# Train single PPO agent with curriculum learning
-python main.py --mode train
-
-# Train 9-agent MAPPO system on 3x3 grid
-python main.py --mode multi
-
-# Launch real-time monitoring dashboard
-python main.py --mode dashboard
-
-# Run adversarial robustness tests
-python main.py --mode test
-
-# Run evaluation against baseline
-python main.py --mode eval
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       MAIN MENU                             │
+├─────────────────────────────────────────────────────────────┤
+│  1. Train Single Agent (PPO with Curriculum Learning)       │
+│  2. Train Multi-Agent (MAPPO for 9 Intersections)           │
+│  3. Run Evaluation Only                                     │
+│  4. Run Adversarial Tests                                   │
+│  5. Generate SUMO Network                                   │
+│  6. Run All Tests                                           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Dashboard Only
+### Command-Line Flags
+
 ```bash
-python run_dashboard.py
-# or
-streamlit run dashboard/app.py
+python main.py --mode train    # Train single PPO agent (curriculum)
+python main.py --mode multi    # Train 9 MAPPO agents on 3×3 grid
+python main.py --mode eval     # Evaluate against fixed-time baseline
+python main.py --mode test     # Run all test suites
+```
+
+### Quick-Start Scripts
+
+```bash
+python run_training.py         # Start single-agent training
+python run_multi_agent.py      # Start multi-agent training
+python run_env_test.py         # Verify environment setup
 ```
 
 ---
 
 ## 🧠 How It Works
 
-1. **Simulation**: SUMO generates a 3×3 intersection grid with realistic vehicle flows, including rush-hour peaks and emergency vehicle injections.
+### Observation Space (18 dimensions per agent)
 
-2. **Single-Agent Bootstrap**: A PPO agent is curriculum-trained on the center intersection (`n11`), progressing from 100 to 500 vehicles.
+Each agent observes its local intersection state:
 
-3. **Multi-Agent Extension**: The trained weights are transferred to 9 independent MAPPO agents. Each agent observes its local 18-dimensional state and contributes to a shared global reward (40% global + 60% local).
+| Feature | Description |
+|---|---|
+| Queue lengths (4) | Vehicles queued per approach |
+| Average speeds (4) | Mean speed per approach lane |
+| CO₂ levels (4) | Emissions per approach |
+| Current phase (1) | Active signal phase |
+| Phase duration (1) | Time in current phase |
+| Emergency flags (4) | Emergency vehicle presence per approach |
 
-4. **Reward Design**: `R = 0.4×throughput − 0.4×wait_penalty − 0.2×CO2 + emergency_bonus`
+### Action Space (3 actions)
 
-5. **Coordination**: An adjacency matrix defines which intersections share global reward signals, encouraging inter-agent cooperation to reduce queue propagation.
+| Action | Effect |
+|---|---|
+| `0` — Keep phase | Maintain current signal |
+| `1` — Switch phase | Toggle NS ↔ EW green |
+| `2` — Emergency | Override for emergency clearance |
+
+### Multi-Agent Coordination
+
+- **Adjacency matrix** defines which intersections share reward signals
+- **Reward**: 60% local + 40% global → agents cooperate to prevent queue propagation
+- **Weight transfer**: Pre-trained single-agent weights bootstrap multi-agent training
 
 ---
 
 ## 🧪 Adversarial Robustness
 
-The system is designed to handle real-world irregularities:
-- ✅ **Lane Blockages**: Adapts to accidents — queue increase ratio 1.23x (excellent)
-- ✅ **Sensor Failures**: Graceful degradation of only 18.5% under 2-lane sensor loss
-- ✅ **Emergency Vehicles**: 85.2% clearance rate, avg 28.3 seconds
+| Scenario | Result | Verdict |
+|---|---|---|
+| **Lane blockage** (accident) | 1.23× queue increase | ✅ Excellent |
+| **Sensor failure** (2 lanes) | 18.5% performance drop | ✅ Graceful degradation |
+| **Emergency vehicles** | 85.2% clearance, 28.3s avg | ✅ Strong |
 
 ---
 
-## 🛠️ Technologies
+## 🛠️ Tech Stack
 
 | Category | Library | Version |
-|----------|---------|---------|
-| RL Framework | stable-baselines3 | ≥2.3.0 |
-| Multi-Agent | pettingzoo | 1.24.1 |
-| Multi-Agent Wrapper | supersuit | 3.9.0 |
-| Simulation | SUMO + traci | ≥1.19 |
-| Deep Learning | PyTorch | ≥2.0 |
-| Dashboard | streamlit | ≥1.28 |
-| Visualization | plotly | ≥5.17 |
-| Data | numpy / pandas | ≥1.24 / ≥2.0 |
+|---|---|---|
+| RL Framework | Stable-Baselines3 | ≥ 2.3.0 |
+| Multi-Agent | PettingZoo | 1.24.1 |
+| Multi-Agent Wrapper | SuperSuit | 3.9.0 |
+| Simulation | SUMO + TraCI | ≥ 1.19 |
+| Deep Learning | PyTorch | ≥ 2.0 |
+| Visualization | Plotly | ≥ 5.17 |
+| Data | NumPy / Pandas | ≥ 1.24 / ≥ 2.0 |
+
+---
+
+## 🚀 Real-World Deployment Roadmap
+
+This project currently runs on **SUMO simulation**. Here's how it can be extended to control real-world traffic signals.
+
+### Simulation vs Real-World
+
+| Aspect | Current (SUMO) | Real-World |
+|---|---|---|
+| **Traffic data** | Simulated vehicles | Camera / sensor feeds (CCTV, LiDAR, inductive loops) |
+| **Signal control** | SUMO's TraCI API | Hardware controller (SCATS, SCOOT, or custom PLC) |
+| **Observations** | Perfect state from simulator | Noisy, incomplete sensor data |
+| **Latency** | Instant | Network delays, processing time |
+| **Safety** | No consequences | Human lives at stake |
+
+### What Would Change
+
+#### 1. Replace SUMO with Real Sensor Input
+Instead of `traci.lane.getLastStepVehicleNumber()`, real-world systems use:
+- **CCTV + Computer Vision** (YOLO / OpenCV) → vehicle counting, queue detection
+- **Inductive loop detectors** → embedded in roads, count passing vehicles
+- **LiDAR / Radar** → measure speed, vehicle density
+- **Google Maps / HERE Traffic API** → live traffic flow data
+
+#### 2. Replace TraCI Actions with Hardware Control
+Instead of `traci.trafficlight.setPhase()`, interface with:
+- A **traffic signal controller** (hardware box at the intersection)
+- Communication protocols like **NTCIP** (US) or **UTMC** (UK)
+- An **edge computing device** (Raspberry Pi / NVIDIA Jetson) connected to signal relays
+
+#### 3. Add a Safety Layer (Critical)
+Real-world deployment **requires**:
+- ⏱️ **Minimum green times** — pedestrians need 15+ seconds to cross
+- 🔴 **All-red clearance intervals** between every phase change
+- 🔄 **Failsafe fallback** — revert to fixed-time mode if the agent crashes
+- 👤 **Human override** — manual control capability at all times
+
+### Practical Next Steps
+
+| Approach | Difficulty | Description |
+|---|---|---|
+| **Data-Driven Simulation** | ⭐ Easy | Feed real traffic data from Google Maps API into SUMO instead of random vehicles |
+| **Digital Twin** | ⭐⭐ Medium | Build a SUMO replica of a real intersection, calibrate with sensor data, deploy learned policy |
+| **Hardware-in-the-Loop** | ⭐⭐⭐ Hard | Connect the RL agent to a real traffic controller in a lab where the controller interfaces with SUMO |
+| **Full Deployment** | ⭐⭐⭐⭐ Expert | Sensor integration + controller hardware + safety certification + municipal government approval |
+
+> **Note:** The current simulation-based approach is exactly how research labs and companies like Google DeepMind and Siemens develop traffic AI before real-world deployment.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
+2. Create your feature branch — `git checkout -b feature/my-feature`
+3. Commit your changes — `git commit -m 'Add my feature'`
+4. Push to the branch — `git push origin feature/my-feature`
 5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📚 Full Report
+<div align="center">
 
-See [`training/results/final_report.md`](training/results/final_report.md) for the complete performance analysis, per-intersection metrics, and reproducibility instructions.
+**Built with** SUMO · Stable-Baselines3 · PettingZoo · PyTorch
+
+</div>
